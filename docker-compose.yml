@@ -1,0 +1,204 @@
+# Fleet Monitor DevSecOps Platform
+# Local Development Environment with Complete Observability Stack
+version: '3.8'
+
+services:
+  # Frontend - React TypeScript SPA
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_ENV=development
+      - REACT_APP_MONITORING_URL=http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+      - prometheus
+    networks:
+      - fleet-network
+
+  # Backend API - Node.js
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://fleet_user:fleet_password@postgres:5432/fleet_monitor
+      - REDIS_URL=redis://redis:6379
+      - AWS_REGION=us-east-1
+      - PROMETHEUS_GATEWAY=http://prometheus-pushgateway:9091
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+      - prometheus-pushgateway
+    networks:
+      - fleet-network
+
+  # Database - PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=fleet_monitor
+      - POSTGRES_USER=fleet_user
+      - POSTGRES_PASSWORD=fleet_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - fleet-network
+
+  # Cache - Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - fleet-network
+
+  # Monitoring - Prometheus
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/rules:/etc/prometheus/rules
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - fleet-network
+
+  # Prometheus Push Gateway
+  prometheus-pushgateway:
+    image: prom/pushgateway:v1.6.2
+    ports:
+      - "9091:9091"
+    networks:
+      - fleet-network
+
+  # Dashboards - Grafana
+  grafana:
+    image: grafana/grafana:10.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/etc/grafana/dashboards/fleet-overview.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - fleet-network
+
+  # Log Management - Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - fleet-network
+
+  # Log Processing - Logstash
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    volumes:
+      - ./monitoring/logstash/config:/usr/share/logstash/pipeline
+      - ./monitoring/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+    depends_on:
+      - elasticsearch
+    networks:
+      - fleet-network
+
+  # Log Visualization - Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - fleet-network
+
+  # Message Queue - RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=fleet
+      - RABBITMQ_DEFAULT_PASS=monitor
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - fleet-network
+
+  # Load Testing - Locust
+  locust:
+    build: ./testing/locust
+    ports:
+      - "8089:8089"
+    environment:
+      - TARGET_URL=http://backend:8000
+    volumes:
+      - ./testing/locust:/locust
+    depends_on:
+      - backend
+    networks:
+      - fleet-network
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+
+networks:
+  fleet-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

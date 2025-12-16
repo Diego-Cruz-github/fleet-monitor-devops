@@ -1,0 +1,116 @@
+{
+  "name": "fleet-monitor-devops",
+  "version": "1.0.0",
+  "description": "Enterprise Fleet Monitoring Platform - DevSecOps Implementation",
+  "main": "index.js",
+  "scripts": {
+    "start": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "build": "npm run build:frontend && npm run build:backend && npm run build:infrastructure",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:infrastructure": "cd infrastructure && npm run build",
+    "deploy": "cd infrastructure && npm run deploy",
+    "deploy:dev": "cd infrastructure && npm run deploy -- --profile dev",
+    "deploy:staging": "cd infrastructure && npm run deploy -- --profile staging", 
+    "deploy:prod": "cd infrastructure && npm run deploy -- --profile prod",
+    "test": "npm run test:frontend && npm run test:backend && npm run test:infrastructure",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && npm test",
+    "test:infrastructure": "cd infrastructure && npm test",
+    "security-scan": "npm run security:scan && npm run security:deps",
+    "security:scan": "echo 'Running security scanner...' && npm audit && echo 'Security scan completed'",
+    "security:deps": "npm audit && cd frontend && npm audit && cd ../backend && npm audit",
+    "lint": "npm run lint:frontend && npm run lint:backend && npm run lint:infrastructure",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && npm run lint",
+    "lint:infrastructure": "cd infrastructure && npm run lint",
+    "format": "npm run format:frontend && npm run format:backend && npm run format:infrastructure",
+    "format:frontend": "cd frontend && npm run format",
+    "format:backend": "cd backend && npm run format", 
+    "format:infrastructure": "cd infrastructure && npm run format",
+    "monitoring:start": "docker-compose -f monitoring/docker-compose.monitoring.yml up -d",
+    "monitoring:stop": "docker-compose -f monitoring/docker-compose.monitoring.yml down",
+    "docs:serve": "cd docs && python -m http.server 8080",
+    "health": "curl http://localhost:8000/health",
+    "setup": "npm install && npm run setup:infrastructure && npm run setup:frontend && npm run setup:backend",
+    "setup:infrastructure": "cd infrastructure && npm install",
+    "setup:frontend": "cd frontend && npm install",
+    "setup:backend": "cd backend && pip install -r requirements.txt",
+    "clean": "npm run clean:infrastructure && npm run clean:frontend && npm run clean:backend",
+    "clean:infrastructure": "cd infrastructure && npm run clean",
+    "clean:frontend": "cd frontend && npm run clean",
+    "clean:backend": "cd backend && find . -name '*.pyc' -delete && find . -name '__pycache__' -delete"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diegocruzo/fleet-monitor-devops.git"
+  },
+  "keywords": [
+    "devops",
+    "devsecops", 
+    "aws",
+    "cdk",
+    "typescript",
+    "infrastructure-as-code",
+    "monitoring",
+    "prometheus",
+    "grafana",
+    "docker",
+    "ecs",
+    "fleet-management",
+    "automotive",
+    "security",
+    "observability",
+    "ci-cd"
+  ],
+  "author": {
+    "name": "Diego Cruz",
+    "email": "contato@diegofontedev.com.br",
+    "url": "https://www.diegofontedev.com.br"
+  },
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "workspaces": [
+    "infrastructure",
+    "frontend",
+    "backend"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run security-scan"
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{py}": [
+      "black --check",
+      "flake8"
+    ]
+  },
+  "config": {
+    "aws-region": "us-east-1",
+    "monitoring-port": "3000",
+    "api-port": "8000",
+    "frontend-port": "3001"
+  }
+}

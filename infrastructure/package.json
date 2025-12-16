@@ -1,0 +1,57 @@
+{
+  "name": "fleet-monitor-infrastructure",
+  "version": "1.0.0",
+  "description": "AWS CDK TypeScript Infrastructure for Fleet Monitor Platform",
+  "main": "lib/app.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "cdk": "cdk",
+    "deploy": "npm run build && cdk deploy --all --require-approval never",
+    "deploy:dev": "npm run build && cdk deploy FleetMonitorDev --require-approval never",
+    "deploy:staging": "npm run build && cdk deploy FleetMonitorStaging --require-approval never", 
+    "deploy:prod": "npm run build && cdk deploy FleetMonitorProd --require-approval never",
+    "destroy": "cdk destroy --all",
+    "diff": "cdk diff",
+    "synth": "cdk synth",
+    "bootstrap": "cdk bootstrap",
+    "lint": "eslint lib/**/*.ts bin/**/*.ts --fix",
+    "format": "prettier --write lib/**/*.ts bin/**/*.ts",
+    "clean": "rm -rf lib/*.js lib/*.d.ts bin/*.js bin/*.d.ts cdk.out node_modules"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/diegocruzo/fleet-monitor-devops.git",
+    "directory": "infrastructure"
+  },
+  "keywords": [
+    "aws-cdk",
+    "infrastructure-as-code",
+    "typescript",
+    "devops",
+    "fleet-monitor"
+  ],
+  "author": {
+    "name": "Diego Cruz",
+    "email": "contato@diegofontedev.com.br"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.1.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "~5.3.0",
+    "aws-cdk": "^2.110.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.110.0",
+    "constructs": "^10.3.0"
+  }
+}
