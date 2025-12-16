@@ -1,10 +1,12 @@
 name: Fleet Monitor CI/CD Pipeline
 
 on:
-  push:
-    branches: [ dev, staging, master ]
-  pull_request:
-    branches: [ dev, staging, master ]
+  # Temporarily disabled until project implementation is complete
+  workflow_dispatch:
+  # push:
+  #   branches: [ dev, staging, master ]
+  # pull_request:
+  #   branches: [ dev, staging, master ]
 
 env:
   AWS_REGION: us-east-1
